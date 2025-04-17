@@ -71,9 +71,10 @@ Shell: {os.environ.get('SHELL', 'unknown')}"""
             response = self.client.generate_content(
                 f"""Context:\n{context}\n\nUser Input: {user_input}\n\n
 You are a helpful terminal assistant. If the user wants to execute a command, respond with just the command in backticks.
-For example, if the user asks to list files, respond with: `ls -la`
-If the user asks a question, provide a helpful answer.
-Keep responses concise and focused on the task."""
+For example, if the user asks to list files, respond with: `ls -la` for linux or `dir` for windows.
+When creating directories or files, make sure your command does not fail if the directory already exists (especially in Windows). Example - `mkdir folder_name 2>nul & echo > trial\\file_name.txt`
+Give the proper and exact command without any extra useless commands. Keep responses concise and focused on the task.
+NOTE: Give the command by seeing the OS provided in Context"""
             )
             
             # Extract command if found
