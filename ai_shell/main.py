@@ -30,7 +30,7 @@ Powered by Jayesh AI on {platform.system()}
             if len(prompt) + len(user_input) > columns:
                 print()  # Move to the next line if input is too long
 
-            if user_input.lower() == 'quit':
+            if user_input.lower() in ['quit' , 'exit']:
                 print(format_text('red', bold=True) + "\nTerminating..." + reset_format())
                 break
 
@@ -48,7 +48,7 @@ Powered by Jayesh AI on {platform.system()}
 - End with '?' to ask about a command or its output
 - Use 'clear' to clear the terminal
 - Use '--config' to update settings
-- Use 'quit' or Ctrl+C to exit
+- Use 'quit' or 'exit' or Ctrl+C to exit
 - Tab completion is enabled for files and folders{reset_format()}""")
                 continue
 

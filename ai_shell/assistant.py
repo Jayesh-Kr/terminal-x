@@ -47,7 +47,11 @@ Shell: {os.environ.get('SHELL', 'unknown')}"""
             print(get_welcome_message())
             return ""
         
-        # Process through AI
+        # Handle command questions
+        if command.strip().endswith('?'):
+            return self._explain_command(command.rstrip('?'))
+    
+    # Process through AI
         return self._process_with_ai(command)
     
     def _execute_shell_command(self, command: str) -> str:
@@ -63,6 +67,26 @@ Shell: {os.environ.get('SHELL', 'unknown')}"""
             return output if output else format_success("Command executed successfully.")
         except Exception as e:
             return format_error(f"Error executing command: {str(e)}")
+        
+    def _explain_command(self, command: str) -> str:
+        """Get explanation for a command from Gemini."""
+        context = self.get_context()
+        try:
+            response = self.client.generate_content(
+                f"""Context:\n{context}\n\nCommand to explain: {command}\n\n
+    You are a helpful terminal assistant. Provide a clear, one-line explanation of what this command does.
+    Focus on practical effects and key options/flags. Keep it concise and user-friendly.
+    Do not provide the command syntax or examples - just explain what it does.
+
+    Example format:
+    For 'dir /s': "Lists all files and folders recursively in the current directory and all subdirectories"
+    For 'ping 8.8.8.8': "Tests network connectivity by sending data packets to Google's DNS server"
+
+    NOTE: Consider the OS from Context when explaining OS-specific commands."""
+            )
+            return format_info(response.text.strip())
+        except Exception as e:
+            return format_error(f"Error getting explanation: {str(e)}")
     
     def _process_with_ai(self, user_input: str) -> str:
         """Process user input through Gemini and handle command execution."""
@@ -70,11 +94,30 @@ Shell: {os.environ.get('SHELL', 'unknown')}"""
         try:
             response = self.client.generate_content(
                 f"""Context:\n{context}\n\nUser Input: {user_input}\n\n
-You are a helpful terminal assistant. If the user wants to execute a command, respond with just the command in backticks.
-For example, if the user asks to list files, respond with: `ls -la` for linux or `dir` for windows.
-When creating directories or files, make sure your command does not fail if the directory already exists (especially in Windows). Example - `mkdir folder_name 2>nul & echo > trial\\file_name.txt`
-Give the proper and exact command without any extra useless commands. Keep responses concise and focused on the task.
-NOTE: Give the command by seeing the OS provided in Context"""
+                You are a helpful terminal assistant. Follow these rules strictly:
+
+                For Windows CMD:
+                1. Use basic CMD commands (dir, mkdir, echo, etc.)
+                2. Use command chains with &
+                3. Use 2>nul for error suppression
+                4. Example: `mkdir hello 2>nul & echo. > hello\\file1.txt & echo. > hello\\file2.txt`
+
+                For Linux:
+                1. Use standard shell commands (ls, mkdir, touch, etc.)
+                2. Use command chains with &&
+                3. Use 2>/dev/null for error suppression
+                4. Example: `mkdir -p hello && touch hello/file1.txt hello/file2.txt`
+
+                General Rules:
+                1. Respond with just the command in backticks
+                2. Keep commands simple and readable
+                3. Never use loops or complex scripting
+                4. Ensure commands are compatible with the detected OS
+                5. Use error suppression to handle existing files/folders
+
+                NOTE: Check the OS from Context and provide the appropriate command format.
+                If Windows: Use CMD syntax with backslashes and &
+                If Linux: Use bash syntax with forward slashes and &&"""
             )
             
             # Extract command if found
